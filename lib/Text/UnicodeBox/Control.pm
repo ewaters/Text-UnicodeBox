@@ -4,8 +4,10 @@ use Moose;
 use Text::UnicodeBox::Utility qw(fetch_box_character);
 use Exporter 'import';
 
-has 'style'    => ( is => 'ro' );
+has 'style'    => ( is => 'rw' );
 has 'position' => ( is => 'ro' );
+has 'top'      => ( is => 'ro' );
+has 'bottom'   => ( is => 'ro' );
 
 our @EXPORT_OK = qw(BOX_START BOX_END);
 our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
@@ -28,7 +30,10 @@ sub to_string {
 	}
 	elsif ($self->position eq 'end') {
 		$context->{end} = $self;
-		$style ||= $context->{start} ? $context->{start}->style : undef;
+		if (my $start = $context->{start}) {
+			$style = $start->style;
+			$self->style($style); # Update my own style to the context style
+		}
 	}
 
 	# Default style to 'light'

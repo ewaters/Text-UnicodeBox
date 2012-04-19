@@ -12,7 +12,7 @@ my $box = Text::UnicodeBox->new();
 isa_ok $box, 'Text::UnicodeBox';
 
 $box->add_line(
-	' ', BOX_START( style => 'heavy' ), ' This is a header ', BOX_END(), ' ',
+	' ', BOX_START( style => 'heavy', top => 'heavy', bottom => 'heavy' ), ' This is a header ', BOX_END(), ' ',
 );
 
 is $box->buffer, <<END_BOX, "Buffer has an interim state";
