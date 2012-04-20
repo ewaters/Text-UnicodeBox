@@ -103,7 +103,10 @@ sub _generate_box_border_line {
 	my %last_parts_at_position = $self->last_line ? %{ $self->last_line->{parts_at_position} } : ();
 	my %current_parts_at_position = $current_line ? %{ $current_line->{parts_at_position} } : ();
 
-	my $final_position = $current_line ? $current_line->{final_position} : $self->last_line->{final_position};
+	# Find the largest final_position value
+	my $final_position = $current_line ? $current_line->{final_position} : 0;
+	$final_position = $self->last_line->{final_position}
+		if $self->last_line && $self->last_line->{final_position} > $final_position;
 
 	my $line = '';
 

@@ -77,4 +77,41 @@ is $box->render, <<END_BOX, "Multi-column, multi-row box with separation";
 └────┴─────────────────────┴─────────────────────┘
 END_BOX
 
+# Fanciness
+
+$box = Text::UnicodeBox->new(
+	whitespace_character => '.',
+);
+
+$box->add_line(
+	BOX_START( style => 'double', top => 'double', bottom => 'double' ),
+	'  id  ', BOX_RULE, ' ts                  ', BOX_RULE, ' log                  ',
+	BOX_END()
+);
+
+$box->add_line(
+	' ',
+	BOX_START(),
+	' 2  ', BOX_RULE, ' 2012-04-16 16:30:43   ', BOX_RULE, ' Eric was here      ',
+	BOX_END()
+);
+
+$box->add_line(
+	' ',
+	BOX_START( bottom => 'heavy' ),
+	' 3  ', BOX_RULE, ' 2012-04-16 16:31:43   ', BOX_RULE, ' Eric was here 2    ',
+	BOX_END()
+);
+
+
+is "\n" . $box->render, <<END_BOX, "Complex layout with many styles";
+
+╔══════╦═════════════════════╦══════════════════════╗
+║  id  ║ ts                  ║ log                  ║
+╚╤════╤╩═════════════════════╩╤════════════════════╤╝
+ │ 2  │ 2012-04-16 16:30:43   │ Eric was here      │
+ │ 3  │ 2012-04-16 16:31:43   │ Eric was here 2    │
+ ┕━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┙
+END_BOX
+
 done_testing;
