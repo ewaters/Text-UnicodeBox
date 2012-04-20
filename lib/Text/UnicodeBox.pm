@@ -9,6 +9,7 @@ use Scalar::Util qw(blessed);
 
 has 'buffer_ref' => ( is => 'rw', default => sub { my $buffer = '';  return \$buffer } );
 has 'last_line'  => ( is => 'rw' );
+has 'whitespace_character' => ( is => 'ro', default => ' ' );
 
 sub buffer {
 	my $self = shift;
@@ -32,53 +33,125 @@ sub add_line {
 		}
 	}
 
+	my %current_line = (
+		parts => \@parts,
+		parts_at_position => {},
+	);
+
 	# Generate this line as text
 	my $line = '';
-	my %context;
-	foreach my $part (@parts) {
-		$line .= $part->to_string(\%context);
+	{
+		my $position = 0;
+		my %context;
+		foreach my $part (@parts) {
+			$current_line{parts_at_position}{$position} = $part;
+			$line .= $part->to_string(\%context);
+			$position += $part->can('length') ? $part->length : 1;
+		}
+		$line .= "\n";
+		$current_line{final_position} = $position;
 	}
-	$line .= "\n";
 
-	## Generate the previous line if needed
+	## Generate the top of the box if needed
 
-	my $previous_line;
+	my $box_border_line;
 	my @box_tops = grep { $_->can('top') && $_->top } @parts;
 	if (@box_tops) {
-		my $in_box_style;
-		$previous_line = '';
-		foreach my $part (@parts) {
-			if ($part->isa('Text::UnicodeBox::Text')) {
-				my $char = $in_box_style ? fetch_box_character( horizontal => $in_box_style ) : ' ';
-				$previous_line .= $char x $part->length;
-			}
-			elsif ($part->isa('Text::UnicodeBox::Control')) {
-				if ($part->position eq 'start' && $part->top) {
-					$in_box_style = $part->top;
-					$previous_line .= fetch_box_character( down => ($part->style || 'light'), right => $in_box_style );
-				}
-				elsif ($part->position eq 'end') {
-					$previous_line .= fetch_box_character( down => ($part->style || 'light'), left => $in_box_style );
-					$in_box_style = undef;
-				}
-			}
-		}
-		$previous_line .= "\n";
+		$box_border_line = $self->_generate_box_border_line(\%current_line);
 	}
 
 	# Store this for later reference
-	$self->last_line({ parts => \@parts, line => $line });
+	$self->last_line(\%current_line);
 
 	# Add lines to the buffer ref
 	my $buffer_ref = $self->buffer_ref;
-	$$buffer_ref .= $previous_line if defined $previous_line;
+	$$buffer_ref .= $box_border_line if defined $box_border_line;
 	$$buffer_ref .= $line;
 }
 
 sub render {
 	my $self = shift;
 
+	my @box_bottoms = grep { $_->can('bottom') && $_->bottom } @{ $self->last_line->{parts} };
+	if (@box_bottoms) {
+		my $box_border_line = $self->_generate_box_border_line();
+		my $buffer_ref = $self->buffer_ref;
+		$$buffer_ref .= $box_border_line;
+	}
+
 	return $self->buffer();
+}
+
+sub _find_part_at_position {
+	my ($position_hash, $position) = @_;
+	while ($position >= 0) {
+		if ($position_hash->{$position}) {
+			return $position_hash->{$position};
+		}
+		$position--;
+	}
+	return;
+}
+
+sub _generate_box_border_line {
+	my ($self, $current_line) = @_;
+
+	my ($below_box_style, $above_box_style);
+		
+	my %last_parts_at_position = $self->last_line ? %{ $self->last_line->{parts_at_position} } : ();
+	my %current_parts_at_position = $current_line ? %{ $current_line->{parts_at_position} } : ();
+
+	my $final_position = $current_line ? $current_line->{final_position} : $self->last_line->{final_position};
+
+	my $line = '';
+
+	foreach my $position (0..$final_position - 1) {
+		my $above_part = _find_part_at_position(\%last_parts_at_position, $position);
+		my $below_part = _find_part_at_position(\%current_parts_at_position, $position);
+
+		my %symbol;
+		# First, let the above part specify styling
+		if ($above_part && $above_part->isa('Text::UnicodeBox::Control')) {
+			$symbol{up} = $above_part->style || 'light';
+			if ($above_part->position eq 'start' && $above_part->bottom) {
+				$above_box_style = $above_part->bottom;
+				$symbol{right} = $above_box_style;
+			}
+			elsif ($above_part->position eq 'end') {
+				$symbol{left} = $above_box_style;
+				$above_box_style = undef;
+			}
+		}
+
+		# Next, let the below part override
+		if ($below_part && $below_part->isa('Text::UnicodeBox::Control')) {
+			$symbol{down} = $below_part->style || 'light';
+			if ($below_part->position eq 'start' && $below_part->top) {
+				$below_box_style = $below_part->top;
+				$symbol{right} = $below_box_style;
+			}
+			elsif ($below_part->position eq 'end') {
+				$symbol{left} = $below_box_style;
+				$below_box_style = undef;
+			}
+		}
+
+		if (! keys %symbol) {
+			$symbol{horizontal} = $below_box_style ? $below_box_style : $above_box_style ? $above_box_style : undef;
+			delete $symbol{horizontal} unless defined $symbol{horizontal};
+		}
+
+		if (! keys %symbol) {
+			$line .= $self->whitespace_character();
+		}
+		else {
+			$line .= fetch_box_character(%symbol);
+		}
+	}
+
+	$line .= "\n";
+
+	return $line;
 }
 
 1;
