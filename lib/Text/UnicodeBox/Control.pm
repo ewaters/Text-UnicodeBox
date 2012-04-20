@@ -9,11 +9,15 @@ has 'position' => ( is => 'ro' );
 has 'top'      => ( is => 'ro' );
 has 'bottom'   => ( is => 'ro' );
 
-our @EXPORT_OK = qw(BOX_START BOX_END);
+our @EXPORT_OK = qw(BOX_START BOX_RULE BOX_END);
 our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
 
 sub BOX_START {
 	return __PACKAGE__->new(position => 'start', @_);
+}
+
+sub BOX_RULE {
+	return __PACKAGE__->new(position => 'middle', @_);
 }
 
 sub BOX_END {
@@ -27,6 +31,12 @@ sub to_string {
 	
 	if ($self->position eq 'start') {
 		$context->{start} = $self;
+	}
+	elsif ($self->position eq 'middle') {
+		if (my $start = $context->{start}) {
+			$style = $start->style;
+			$self->style($style); # Update my own style to the context style
+		}
 	}
 	elsif ($self->position eq 'end') {
 		$context->{end} = $self;

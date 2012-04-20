@@ -6,6 +6,7 @@ use charnames ();
 use Exporter 'import';
 
 our @EXPORT_OK = qw(find_box_unicode_name fetch_box_character);
+our $report_on_failure = 0;
 
 sub fetch_box_character {
     my $name = find_box_unicode_name(@_);
@@ -15,6 +16,12 @@ sub fetch_box_character {
 
 sub find_box_unicode_name {
     my %directions = @_;
+
+	if (grep { ! defined $_ } values %directions) {
+		print "No way to handle undefined values: " . 
+			join (', ', map { "$_: ".(defined $directions{$_} ? $directions{$_} : 'undef') } sort keys %directions) . "\n";
+		return undef;
+	}
 
     # Expand shorthand
     foreach my $direction (keys %directions) {
@@ -30,6 +37,13 @@ sub find_box_unicode_name {
         $directions{horizontal} = delete $directions{left};
         delete $directions{right};
     }
+
+	# If any of the styles is a double, make sure all 'light' are 'single'
+	if (grep { $directions{$_} eq 'double' } keys %directions) {
+		foreach my $direction (grep { $directions{$_} eq 'light' } keys %directions) {
+			$directions{$direction} = 'single';
+		}
+	}
 
     # Group together styles
     my %styles;
@@ -80,6 +94,14 @@ sub find_box_unicode_name {
         next unless charnames::vianame($variation);
         return $variation;
     }
+
+	if ($report_on_failure) {
+		print "Unable to find any character like (" .
+			join (', ', map { "$_: $directions{$_}" } sort keys %directions) .
+			"), tried the following: " .
+			join (', ', @variations) . "\n";
+	}
+
     return undef;
 }
 

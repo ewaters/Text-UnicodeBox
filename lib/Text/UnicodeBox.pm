@@ -55,8 +55,10 @@ sub add_line {
 	## Generate the top of the box if needed
 
 	my $box_border_line;
-	my @box_tops = grep { $_->can('top') && $_->top } @parts;
-	if (@box_tops) {
+	if (grep { $_->can('top') && $_->top } @parts) {
+		$box_border_line = $self->_generate_box_border_line(\%current_line);
+	}
+	elsif (grep { $_->can('bottom') && $_->bottom } @{ $self->last_line->{parts} }) {
 		$box_border_line = $self->_generate_box_border_line(\%current_line);
 	}
 
@@ -121,6 +123,9 @@ sub _generate_box_border_line {
 				$symbol{left} = $above_box_style;
 				$above_box_style = undef;
 			}
+			elsif ($above_part->position eq 'middle') {
+				$symbol{left} = $symbol{right} = $above_box_style;
+			}
 		}
 
 		# Next, let the below part override
@@ -128,11 +133,14 @@ sub _generate_box_border_line {
 			$symbol{down} = $below_part->style || 'light';
 			if ($below_part->position eq 'start' && $below_part->top) {
 				$below_box_style = $below_part->top;
-				$symbol{right} = $below_box_style;
+				$symbol{right} = $below_box_style if $below_box_style;
 			}
 			elsif ($below_part->position eq 'end') {
-				$symbol{left} = $below_box_style;
+				$symbol{left} = $below_box_style if $below_box_style;
 				$below_box_style = undef;
+			}
+			elsif ($below_part->position eq 'middle') {
+				$symbol{left} = $symbol{right} = $below_box_style if $below_box_style;
 			}
 		}
 
@@ -145,7 +153,7 @@ sub _generate_box_border_line {
 			$line .= $self->whitespace_character();
 		}
 		else {
-			$line .= fetch_box_character(%symbol);
+			$line .= fetch_box_character(%symbol) || '';
 		}
 	}
 
