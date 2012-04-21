@@ -85,10 +85,11 @@ sub render {
 }
 
 sub _find_part_at_position {
-	my ($position_hash, $position) = @_;
+	my ($line_details, $position) = @_;
+	return if $position == $line_details->{final_position};
 	while ($position >= 0) {
-		if ($position_hash->{$position}) {
-			return $position_hash->{$position};
+		if (my $return = $line_details->{parts_at_position}{$position}) {
+			return $return;
 		}
 		$position--;
 	}
@@ -97,11 +98,7 @@ sub _find_part_at_position {
 
 sub _generate_box_border_line {
 	my ($self, $current_line) = @_;
-
 	my ($below_box_style, $above_box_style);
-		
-	my %last_parts_at_position = $self->last_line ? %{ $self->last_line->{parts_at_position} } : ();
-	my %current_parts_at_position = $current_line ? %{ $current_line->{parts_at_position} } : ();
 
 	# Find the largest final_position value
 	my $final_position = $current_line ? $current_line->{final_position} : 0;
@@ -109,10 +106,10 @@ sub _generate_box_border_line {
 		if $self->last_line && $self->last_line->{final_position} > $final_position;
 
 	my $line = '';
-
 	foreach my $position (0..$final_position - 1) {
-		my $above_part = _find_part_at_position(\%last_parts_at_position, $position);
-		my $below_part = _find_part_at_position(\%current_parts_at_position, $position);
+		my ($above_part, $below_part);
+		$above_part = _find_part_at_position($self->last_line, $position) if $self->last_line;
+		$below_part = _find_part_at_position($current_line, $position) if $current_line;
 
 		my %symbol;
 		# First, let the above part specify styling
@@ -130,6 +127,9 @@ sub _generate_box_border_line {
 				$symbol{left} = $symbol{right} = $above_box_style;
 			}
 		}
+		elsif ($above_part && $above_part->isa('Text::UnicodeBox::Text') && $above_box_style) {
+			$symbol{left} = $symbol{right} = $above_box_style;
+		}
 
 		# Next, let the below part override
 		if ($below_part && $below_part->isa('Text::UnicodeBox::Control')) {
@@ -146,7 +146,9 @@ sub _generate_box_border_line {
 				$symbol{left} = $symbol{right} = $below_box_style if $below_box_style;
 			}
 		}
-
+		elsif ($below_part && $below_part->isa('Text::UnicodeBox::Text') && $below_box_style) {
+			$symbol{left} = $symbol{right} = $below_box_style;
+		}
 		if (! keys %symbol) {
 			$symbol{horizontal} = $below_box_style ? $below_box_style : $above_box_style ? $above_box_style : undef;
 			delete $symbol{horizontal} unless defined $symbol{horizontal};
@@ -156,7 +158,7 @@ sub _generate_box_border_line {
 			$line .= $self->whitespace_character();
 		}
 		else {
-			$line .= fetch_box_character(%symbol) || '';
+			$line .= fetch_box_character(%symbol) || '?';
 		}
 	}
 

@@ -17,8 +17,8 @@ isa_ok $box, 'Text::UnicodeBox';
 
 my @multiline = (
 	'While I pondered weak and weary',
-	'over many a curious volume of  ',
-	'forgotten lore                 '
+	'over many a quaint and curious ',
+	'volume of forgotten lore       '
 );
 
 $box->add_line('.', BOX_START( style => 'light', top => 'double' ), " $multiline[0] ", BOX_END(), '.');
@@ -28,8 +28,8 @@ $box->add_line('.', BOX_START( style => 'light', bottom => 'double' ), " $multil
 is $box->render, <<END_BOX, "Double top/bottom multiline box";
 .╒═════════════════════════════════╕.
 .│ While I pondered weak and weary │.
-.│ over many a curious volume of   │.
-.│ forgotten lore                  │.
+.│ over many a quaint and curious  │.
+.│ volume of forgotten lore        │.
 .╘═════════════════════════════════╛.
 END_BOX
 
@@ -85,24 +85,20 @@ $box = Text::UnicodeBox->new(
 
 $box->add_line(
 	BOX_START( style => 'double', top => 'double', bottom => 'double' ),
-	'  id  ', BOX_RULE, ' ts                  ', BOX_RULE, ' log                  ',
-	BOX_END()
+	'  id  ', BOX_RULE, ' ts                  ', BOX_RULE, ' log                  ', BOX_END()
 );
-
 $box->add_line(
-	' ',
-	BOX_START(),
-	' 2  ', BOX_RULE, ' 2012-04-16 16:30:43   ', BOX_RULE, ' Eric was here      ',
-	BOX_END()
+	' ', BOX_START(),
+	' 2  ', BOX_RULE, ' 2012-04-16 16:30:43   ', BOX_RULE, ' Eric was here      ', BOX_END()
 );
-
 $box->add_line(
-	' ',
-	BOX_START( bottom => 'heavy' ),
-	' 3  ', BOX_RULE, ' 2012-04-16 16:31:43   ', BOX_RULE, ' Eric was here 2    ',
-	BOX_END()
+	' ', BOX_START(),
+	' 3  ', BOX_RULE, ' 2012-04-16 16:31:43   ', BOX_RULE, ' Eric was here 2    ', BOX_END()
 );
-
+$box->add_line(
+	BOX_START( style => 'heavy', top => 'heavy', bottom => 'heavy' ),
+	' id ', BOX_RULE, ' ts                  ', BOX_RULE, ' log                    ', BOX_END()
+);
 
 is "\n" . $box->render, <<END_BOX, "Complex layout with many styles";
 
@@ -111,7 +107,9 @@ is "\n" . $box->render, <<END_BOX, "Complex layout with many styles";
 ╚╤════╤╩═════════════════════╩╤════════════════════╤╝
  │ 2  │ 2012-04-16 16:30:43   │ Eric was here      │
  │ 3  │ 2012-04-16 16:31:43   │ Eric was here 2    │
- ┕━━━━┷━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┙
+┏┷━━━┳┷━━━━━━━━━━━━━━━━━━━━┳━━┷━━━━━━━━━━━━━━━━━━━━┷┓
+┃ id ┃ ts                  ┃ log                    ┃
+┗━━━━┻━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━┛
 END_BOX
 
 done_testing;
