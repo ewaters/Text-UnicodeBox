@@ -11,7 +11,7 @@ our $report_on_failure = 0;
 sub fetch_box_character {
     my $name = find_box_unicode_name(@_);
 	return undef unless $name;
-    return charnames::string_vianame($name);
+    return chr charnames::vianame($name);
 }
 
 sub find_box_unicode_name {

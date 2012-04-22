@@ -29,7 +29,7 @@ sub add_line {
 			die "add_line() takes only strings or Text::UnicodeBox:: objects as arguments";
 		}
 		else {
-			push @parts, STRING($part);
+			push @parts, BOX_STRING($part);
 		}
 	}
 
