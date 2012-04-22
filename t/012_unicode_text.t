@@ -33,7 +33,7 @@ END_BOX
 
 # Miscellanous foreign character sets
 
-my $box = Text::UnicodeBox->new();
+$box = Text::UnicodeBox->new();
 isa_ok $box, 'Text::UnicodeBox';
 
 is BOX_STRING(" suscripción  ")->length, 14, "Spanish";

@@ -2,7 +2,7 @@ package Text::UnicodeBox::Text;
 
 use Moose;
 use Text::UnicodeBox::Utility;
-use Encode qw(encode);
+use Text::CharWidth qw(mbswidth);
 use Term::ANSIColor qw(colorstrip);
 use Exporter 'import';
 
@@ -18,8 +18,8 @@ sub BOX_STRING {
 	# Strip out any colors
 	my $stripped_string = colorstrip($string);
 
-	# Some characters (Kanji, for instance) take up two columns per character
-	my $length = length(encode('big5', $stripped_string));
+	# Determine the width on a terminal of the string given; may be composed of unicode characters that take up two columns, or by ones taking up 0 columns
+	my $length = mbswidth($stripped_string);
 
 	return __PACKAGE__->new(value => $string, length => $length);
 }
