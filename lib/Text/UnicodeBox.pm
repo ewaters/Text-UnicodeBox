@@ -86,7 +86,7 @@ sub render {
 
 sub _find_part_at_position {
 	my ($line_details, $position) = @_;
-	return if $position == $line_details->{final_position};
+	return if $position >= $line_details->{final_position};
 	while ($position >= 0) {
 		if (my $return = $line_details->{parts_at_position}{$position}) {
 			return $return;
