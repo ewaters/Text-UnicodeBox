@@ -51,4 +51,24 @@ is "\n" . $table->render, <<END_BOX, "Different take on the rendering";
 ╘════╧═════════════════════╧═════════════════════╛
 END_BOX
 
+$table = Text::UnicodeBox::Table->new();
+
+$table->add_header({ top => 'double', bottom => 'double' }, @columns);
+$table->add_row({ bottom => 'light' }, @{ $rows[0] });
+$table->add_row({ bottom => 'light' }, @{ $rows[1] });
+$table->add_row({ bottom => 'double' }, @{ $rows[2] });
+
+is "\n" . $table->render, <<END_BOX, "Lines in between rows";
+
+╒════╤═════════════════════╤═════════════════════╕
+│ id │ ts                  │ log                 │
+╞════╪═════════════════════╪═════════════════════╡
+│  1 │ 2012-04-16 12:34:16 │ blakblkj welkjwe    │
+├────┼─────────────────────┼─────────────────────┤
+│  2 │ 2012-04-16 16:30:43 │ Eric was here       │
+├────┼─────────────────────┼─────────────────────┤
+│  3 │ 2012-04-16 16:31:43 │ Eric was here again │
+╘════╧═════════════════════╧═════════════════════╛
+END_BOX
+
 done_testing;
