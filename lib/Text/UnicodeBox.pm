@@ -58,7 +58,7 @@ sub add_line {
 	if (grep { $_->can('top') && $_->top } @parts) {
 		$box_border_line = $self->_generate_box_border_line(\%current_line);
 	}
-	elsif (grep { $_->can('bottom') && $_->bottom } @{ $self->last_line->{parts} }) {
+	elsif ($self->last_line && grep { $_->can('bottom') && $_->bottom } @{ $self->last_line->{parts} }) {
 		$box_border_line = $self->_generate_box_border_line(\%current_line);
 	}
 
