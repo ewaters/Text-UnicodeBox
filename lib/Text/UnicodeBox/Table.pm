@@ -70,4 +70,15 @@ sub push_line {
 	push @{ $self->lines }, [ $opt, \@strings ];
 }
 
+sub output_width {
+	my $self = shift;
+
+	my $width = 1; # first pipe char
+	
+	foreach my $column_width (@{ $self->max_column_widths }) {
+		$width += $column_width + 3; # 2: padding, 1: trailing pipe char
+	}
+	return $width;
+}
+
 1;
