@@ -11,6 +11,8 @@ has 'buffer_ref' => ( is => 'rw', default => sub { my $buffer = '';  return \$bu
 has 'last_line'  => ( is => 'rw' );
 has 'whitespace_character' => ( is => 'ro', default => ' ' );
 
+our $VERSION = 0.01;
+
 sub buffer {
 	my $self = shift;
 	return ${ $self->buffer_ref };

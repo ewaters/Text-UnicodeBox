@@ -71,4 +71,20 @@ is "\n" . $table->render, <<END_BOX, "Lines in between rows";
 ╘════╧═════════════════════╧═════════════════════╛
 END_BOX
 
+$table = Text::UnicodeBox::Table->new();
+
+$table->add_header({ top => 'double', bottom => 'double' }, @columns);
+$table->add_row(1, '2012-04-16 12:34:16', '象形文字象形文字');
+$table->add_row({ bottom => 'double' }, @{ $rows[1] });
+
+is "\n" . $table->render, <<END_BOX, "Unicode table data";
+
+╒════╤═════════════════════╤══════════════════╕
+│ id │ ts                  │ log              │
+╞════╪═════════════════════╪══════════════════╡
+│  1 │ 2012-04-16 12:34:16 │ 象形文字象形文字 │
+│  2 │ 2012-04-16 16:30:43 │ Eric was here    │
+╘════╧═════════════════════╧══════════════════╛
+END_BOX
+
 done_testing;
