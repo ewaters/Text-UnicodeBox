@@ -1,5 +1,41 @@
 package Text::UnicodeBox;
 
+=encoding utf-8
+
+=head1 NAME
+
+Text::UnicodeBox - Text box drawing using the Unicode box symbols
+
+=head1 SYNOPSIS
+
+  use Text::UnicodeBox;
+  use Text::UnicodeBox::Control qw(:all);
+  
+  my $box = Text::UnicodeBox->new();
+  $box->add_line(
+    BOX_START( style => 'double', top => 'double', bottom => 'double' ), '   ', BOX_END(),
+    '    ',
+    BOX_START( style => 'heavy', top => 'heavy', bottom => 'heavy' ), '   ', BOX_END()
+  );
+  print $box->render();
+
+  # Renders:
+  # ╔═══╗    ┏━━━┓
+  # ║   ║    ┃   ┃
+  # ╚═══╝    ┗━━━┛
+
+=head1 DESCRIPTION
+
+Text::UnicodeBox is a low level box drawing interface.  You'll most likely want to use one of the higher level modules such as L<Text::UnicodeBox::Table>.
+
+The unicode box symbol table (L<http://en.wikipedia.org/wiki/Box-drawing_character>) is a fairly robust set of symbols that allow you to draw lines and boxes with monospaced fonts.  This module allows you to focus on the content of the boxes you need to draw and mostly ignore how to draw a good looking box with proper connections between all the lines.
+
+The low level approach is line-based.  A box object is created, C<add_line> is called for each line of content you'd like to render, and C<render> is called to complete the box.
+
+Output is built up over time, which allows you to stream the output rather then buffering it and printing it in one go.
+
+=cut
+
 use Moose;
 
 use Text::UnicodeBox::Control qw(:all);
@@ -13,10 +49,36 @@ has 'whitespace_character' => ( is => 'ro', default => ' ' );
 
 our $VERSION = 0.01;
 
+=head1 METHODS
+
+=head2 new (%params)
+
+Create a new instance.  Provide arguments as a list.  Valid arguments are:
+
+=over 4
+
+=item whitespace_character (default: ' ')
+
+When the box renderer needs to pad the output of the interstitial lines of output, this character will be used.  Defaults to a simple space.
+
+=back
+
+=head2 buffer
+
+Return the current buffer of rendered text.
+
+=cut
+
 sub buffer {
 	my $self = shift;
 	return ${ $self->buffer_ref };
 }
+
+=head2 add_line (@parts)
+
+Pass a list of parts for a rendered line of output.  You may pass either a string, a L<Text::UnicodeBox::Control> or a L<Text::UnicodeBox::Text> object.  Strings will be transformed into the latter.  The line will be rendered to the buffer.
+
+=cut
 
 sub add_line {
 	my $self = shift;
@@ -73,6 +135,14 @@ sub add_line {
 	$$buffer_ref .= $line;
 }
 
+=head2 render
+
+Complete the rendering of the box, drawing any final lines needed to close up the drawing.
+
+Returns the buffer
+
+=cut
+
 sub render {
 	my $self = shift;
 
@@ -125,7 +195,7 @@ sub _generate_box_border_line {
 				$symbol{left} = $above_box_style;
 				$above_box_style = undef;
 			}
-			elsif ($above_part->position eq 'middle') {
+			elsif ($above_part->position eq 'rule') {
 				$symbol{left} = $symbol{right} = $above_box_style;
 			}
 		}
@@ -144,7 +214,7 @@ sub _generate_box_border_line {
 				$symbol{left} = $below_box_style if $below_box_style;
 				$below_box_style = undef;
 			}
-			elsif ($below_part->position eq 'middle') {
+			elsif ($below_part->position eq 'rule') {
 				$symbol{left} = $symbol{right} = $below_box_style if $below_box_style;
 			}
 		}
@@ -168,5 +238,17 @@ sub _generate_box_border_line {
 
 	return $line;
 }
+
+=head1 COPYRIGHT
+
+Copyright (c) 2012 Eric Waters and Shutterstock Images (http://shutterstock.com).  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the LICENSE file included with this module.
+
+=head1 AUTHOR
+
+Eric Waters <ewaters@gmail.com>
+
+=cut
 
 1;

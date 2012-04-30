@@ -1,6 +1,4 @@
-Just another ASCII art box generator for Perl, this time with Unicode box symbols!
-
-## See Also
+# See Also
 
 * https://metacpan.org/module/Text::ASCIITable (Nov 29, 2011)
 
@@ -15,8 +13,8 @@ $t->addRow(3,'Dummy product 3',12.3);
 $t->addRowLine();
 $t->addRow('','Total',57.9);
 print $t;
- 
-# Result:
+```
+```
 .------------------------------.
 |            Basket            |
 +----+-----------------+-------+
@@ -84,7 +82,8 @@ $t->add(1, "Tom Jones", "(666) 555-1212");
 $t->add(2, "Barnaby Jones", "(666) 555-1213");
 $t->add(3, "Bridget Jones", "(666) 555-1214");
 print $t->render;
-Produces:
+````
+````
 +----+---------------+----------------+
 | id | name          | phone          |
 +----+---------------+----------------+
@@ -197,6 +196,11 @@ $table->head('a', 'b');
 $table->rule('=');
 $table->row('c', 'd');
 print $table->render(20);
+```
+```
+a|b
+===
+c|d
 ```
 
 * https://metacpan.org/module/Text::SpanningTable (Oct 17, 2010)

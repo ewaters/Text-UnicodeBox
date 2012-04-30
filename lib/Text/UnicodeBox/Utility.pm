@@ -1,5 +1,15 @@
 package Text::UnicodeBox::Utility;
 
+=head1 NAME
+
+Text::UnicodeBox::Utility
+
+=head1 DESCRIPTION
+
+This module is part of the low level interface to L<Text::UnicodeBox>; you probably don't need to use it directly.
+
+=cut
+
 use strict;
 use warnings;
 use charnames ();
@@ -8,11 +18,51 @@ use Exporter 'import';
 our @EXPORT_OK = qw(find_box_unicode_name fetch_box_character);
 our $report_on_failure = 0;
 
+=head1 EXPORTED METHODS
+
+The following methods are exportable by name.
+
+=head2 fetch_box_character (%spec)
+
+Same as C<find_box_unicode_name> but returns the actual symbol.
+
+=cut
+
 sub fetch_box_character {
     my $name = find_box_unicode_name(@_);
 	return undef unless $name;
     return chr charnames::vianame($name);
 }
+
+=head2 find_box_unicode_name (%spec)
+
+Given a list of directions and styles, find a matching unicode name that can represent the symbol.  Returns undefined if no such symbol exists.
+
+The spec may contain keys like so:
+
+=over 4
+
+=item up
+
+=item down
+
+=item left
+
+=item right
+
+Provide a style for the named direction
+
+=item horizontal
+
+=item vertical
+
+These are the same as having provided 'top' & 'bottom' or 'left' and 'right'
+
+=back
+
+For each key, the value may be and empty string or the string '1' to default to the style 'light'.  Otherwise, the value is the style you want the line segment to be ('light', 'heavy', 'double', 'single').
+
+=cut
 
 sub find_box_unicode_name {
     my %directions = @_;
@@ -104,5 +154,17 @@ sub find_box_unicode_name {
 
     return undef;
 }
+
+=head1 COPYRIGHT
+
+Copyright (c) 2012 Eric Waters and Shutterstock Images (http://shutterstock.com).  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the LICENSE file included with this module.
+
+=head1 AUTHOR
+
+Eric Waters <ewaters@gmail.com>
+
+=cut
 
 1;
