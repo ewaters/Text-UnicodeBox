@@ -45,14 +45,4 @@ is "\n" . $box->render, <<END_BOX, "Multiple boxes per line with many different 
   ┕━━━━┙
 END_BOX
 
-$box = Text::UnicodeBox->new();
-  
-  $box->add_line(
-    BOX_START( style => 'double', top => 'double', bottom => 'double' ), '   ', BOX_END(),
-    '    ',
-    BOX_START( style => 'heavy', top => 'heavy', bottom => 'heavy' ), '   ', BOX_END()
-  );
-
-  print $box->render();
-
 done_testing;

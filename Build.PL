@@ -4,6 +4,9 @@ my $build = Module::Build->new(
 	module_name => 'Text::UnicodeBox',
 	license     => 'perl',
 	sign        => 1,
+	configure_requires => {
+		'Module::Build' => 0.4,
+	},
 	build_requires => {
 		'Test::More' => 0,
 	},
