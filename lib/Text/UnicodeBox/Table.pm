@@ -38,6 +38,8 @@ has 'lines'             => ( is => 'rw', default => sub { [] } );
 has 'max_column_widths' => ( is => 'rw', default => sub { [] } );
 has 'style'             => ( is => 'rw', default => 'light' );
 has 'is_rendered'       => ( is => 'rw' );
+has 'split_lines'       => ( is => 'ro' );
+has 'max_width'         => ( is => 'ro' );
 
 =head1 METHODS
 
@@ -50,6 +52,14 @@ has 'is_rendered'       => ( is => 'rw' );
   my $table = Text::UnicodeBox::Table->new( style => 'horizontal_double ');
 
 You may specify a certain style for the table to be drawn.  This may be overridden on a per row basis.
+
+=item split_lines
+
+If set, line breaks in cell data will result in new rows rather then breaks in the rendering.
+
+=item max_width
+
+If set, the width of the table will ever exceed the given width.  Data will attempted to be split on spaces but will be hyphenated if that's not possible.
 
 =over 4
 
@@ -163,6 +173,11 @@ around 'render' => sub {
 	my @alignment;
 
 	my @lines = @{ $self->lines };
+
+	if ($self->max_width) {
+		@lines = $self->_fit_lines_in_max_width($self->max_width, @lines);
+	}
+
 	foreach my $i (0..$#lines) {
 		my ($opts, $columns) = @{ $lines[$i] };
 		my %start = (
@@ -207,6 +222,23 @@ around 'render' => sub {
 sub _push_line {
 	my ($self, $opt, @columns) = @_;
 
+	# Allow undef to be passed in columns; map it to ''
+	$columns[$_] = '' foreach grep { ! defined $columns[$_] } 0..$#columns;
+
+	# If split_lines, break up each cell into as many lines as necessary and recall _push_line for each new row
+	my $do_split_lines = defined $opt->{split_lines} ? $opt->{split_lines} : $self->split_lines;
+	if ($do_split_lines && grep { /\n/ } @columns) {
+		my @new_rows;
+		foreach my $i (0..$#columns) {
+			my @split = split /\n/, $columns[$i];
+			foreach my $j (0..$#split) {
+				$new_rows[$j][$i] = $split[$j];
+			}
+		}
+		$self->_push_line($opt, @$_) foreach @new_rows;
+		return;
+	}
+
 	# Convert each column into a ::Text object so that I can figure out the length as
 	# well as record max column widths
 	my @strings;
@@ -218,6 +250,20 @@ sub _push_line {
 	}
 
 	push @{ $self->lines }, [ $opt, \@strings ];
+}
+
+sub _fit_lines_in_max_width {
+	my ($self, $max_width, @lines) = @_;
+
+	my @new_lines;
+	foreach my $line (@lines) {
+		my ($opts, $columns) = @$line;
+
+
+		push @new_lines, [ $opts, $columns ];
+	}
+
+	return @new_lines;
 }
 
 =head2 output_width
@@ -234,6 +280,11 @@ sub output_width {
 	foreach my $column_width (@{ $self->max_column_widths }) {
 		$width += $column_width + 3; # 2: padding, 1: trailing pipe char
 	}
+
+	if ($self->max_width && $width > $self->max_width) {
+		return $self->max_width; # FIXME: is this relastic?  What about for very small values of max_width and large count of columns?
+	}
+
 	return $width;
 }
 
