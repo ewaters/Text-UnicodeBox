@@ -36,6 +36,8 @@ How many characters wide the text represents when rendered on the screen.
 
 has 'value'    => ( is => 'rw' );
 has 'length'   => ( is => 'rw' );
+has '_words'   => ( is => 'rw' );
+has '_longest_word_length' => ( is => 'rw' );
 
 our @EXPORT_OK = qw(BOX_STRING);
 our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
@@ -141,6 +143,29 @@ Returns the value of this object.
 sub to_string {
 	my $self = shift;
 	return $self->value;
+}
+
+=doc _split_up_on_whitespace
+
+Normally we don't need to know the width or location of every word in the string.  If we want to split things on word boundaries, though, let's figure this out and store each word as a separate object.
+
+=cut
+
+sub _split_up_on_whitespace {
+	my $self = shift;
+
+	# Don't repeat work
+	return if $self->_longest_word_length;
+
+	my (@words, $longest_word);
+	foreach my $word (split / /, $self->value) {
+		my $obj = BOX_STRING($word);
+		push @words, $obj;
+		$longest_word = $obj->length if ! $longest_word || $longest_word < $obj->length;
+	}
+	
+	$self->_longest_word_length($longest_word || 0);
+	$self->_words(\@words)
 }
 
 =head1 COPYRIGHT
