@@ -15,6 +15,7 @@ use Text::UnicodeBox::Utility;
 use Text::CharWidth qw(mbswidth);
 use Term::ANSIColor qw(colorstrip);
 use Exporter 'import';
+use List::Util qw(max);
 
 =head1 METHODS
 
@@ -36,8 +37,11 @@ How many characters wide the text represents when rendered on the screen.
 
 has 'value'    => ( is => 'rw' );
 has 'length'   => ( is => 'rw' );
+has 'line_count' => ( is => 'rw', default => 1 );
 has '_words'   => ( is => 'rw' );
 has '_longest_word_length' => ( is => 'rw' );
+has '_lines'   => ( is => 'rw' );
+has '_longest_line_length' => ( is => 'rw' );
 
 our @EXPORT_OK = qw(BOX_STRING);
 our %EXPORT_TAGS = ( all => [@EXPORT_OK] );
@@ -166,6 +170,52 @@ sub _split_up_on_whitespace {
 	
 	$self->_longest_word_length($longest_word || 0);
 	$self->_words(\@words)
+}
+
+sub _split_up_on_newline {
+	my $self = shift;
+
+	# Don't repeat work
+	return if $self->_longest_line_length;
+
+	my (@lines, $longest_line);
+	foreach my $line (split /\n/, $self->value) {
+		my $obj = BOX_STRING($line);
+		push @lines, $obj;
+		$longest_line = max($obj->length, $longest_line || 0);
+	}
+	
+	$self->_longest_line_length($longest_line || 0);
+	$self->_lines(\@lines);
+	$self->line_count(int @lines);
+}
+
+sub get_lines {
+	my $self = shift;
+	if ($self->_lines) {
+		return @{ $self->_lines };
+	}
+	else {
+		return $self;
+	}
+}
+
+=doc _split_to_max_width
+
+This string could contain bytes that span 0, 1 or 2 terminal columns.  Given a max width, split up this string into a number of other strings whose terminal width is no more than the passed width.
+
+=cut
+
+sub _split_to_max_width {
+	my ($self, $max_width) = @_;
+
+	my @segments;
+	my $value = $self->value;
+	while (length $value) {
+		my $segment = substr $value, 0, $max_width, '';
+		push @segments, BOX_STRING($segment);
+	}
+	return @segments;
 }
 
 =head1 COPYRIGHT

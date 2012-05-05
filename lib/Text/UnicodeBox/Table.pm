@@ -42,6 +42,7 @@ has 'is_rendered'       => ( is => 'rw' );
 has 'split_lines'       => ( is => 'ro' );
 has 'max_width'         => ( is => 'ro' );
 has 'column_widths'     => ( is => 'rw' );
+has 'break_words'       => ( is => 'ro' );
 
 =head1 METHODS
 
@@ -61,7 +62,18 @@ If set, line breaks in cell data will result in new rows rather then breaks in t
 
 =item max_width
 
-If set, the width of the table will ever exceed the given width.  Data will attempted to be split on spaces but will be hyphenated if that's not possible.
+If set, the width of the table will ever exceed the given width.  Data will be attempted to fit with wrapping at word boundaries.
+
+=item break_words
+
+If set, wrapping may break words
+
+=item column_widths
+
+  column_widths => [ undef, 40, 60 ],
+  # First column may be any width but the second and third have specified widths
+
+Specify the exact width of each column, sans padding and box formatting.
 
 =over 4
 
@@ -177,7 +189,7 @@ around 'render' => sub {
 	my $lines             = $self->lines;
 	my $max_column_widths = $self->max_column_widths;
 
-	if ($self->_is_width_constrained) {
+	if ($self->_is_width_constrained || $self->split_lines) {
 		if ($self->max_width && ! $self->column_widths) {
 			$self->_determine_column_widths();
 		}
@@ -234,8 +246,9 @@ sub _push_line {
 	# Allow undef to be passed in columns; map it to ''
 	$columns[$_] = '' foreach grep { ! defined $columns[$_] } 0..$#columns;
 
-	# If split_lines, break up each cell into as many lines as necessary and recall _push_line for each new row
 	my $do_split_lines = defined $opt->{split_lines} ? $opt->{split_lines} : $self->split_lines;
+=cut
+	# If split_lines, break up each cell into as many lines as necessary and recall _push_line for each new row
 	if ($do_split_lines && grep { /\n/ } @columns) {
 		my @new_rows;
 		foreach my $i (0..$#columns) {
@@ -247,17 +260,23 @@ sub _push_line {
 		$self->_push_line($opt, @$_) foreach @new_rows;
 		return;
 	}
+=cut
 
 	# Convert each column into a ::Text object so that I can figure out the length as
 	# well as record max column widths
 	my @strings;
 	foreach my $i (0..$#columns) {
 		my $string = BOX_STRING($columns[$i]);
+		my $string_length = $string->length;
 		push @strings, $string;
 
+		if ($do_split_lines && $columns[$i] =~ m/\n/) {
+			$string->_split_up_on_newline;
+			$string_length = $string->_longest_line_length;
+		}
+
 		# Update record of max column widths
-		$self->max_column_widths->[$i] = $string->length
-			if ! $self->max_column_widths->[$i] || $self->max_column_widths->[$i] < $string->length;
+		$self->max_column_widths->[$i] = max($string_length, $self->max_column_widths->[$i] || 0);
 
 		# Prepare for fitting logic
 		if ($self->_is_width_constrained) {
@@ -309,6 +328,11 @@ sub _determine_column_widths {
 	# Escape early if the max column widths already fit the constraint
 	return if $widths_fit->(@{ $self->max_column_widths });
 
+	# FIXME
+	if ($self->break_words) {
+		die "Passing max_width and break_words without column_widths is not yet implemented\n";
+	}
+
 	# Figure out longest word lengths
 	my @longest_word_lengths;
 	foreach my $line (@{ $self->lines }) {
@@ -318,8 +342,9 @@ sub _determine_column_widths {
 		}
 	}
 
-	if (sum (@longest_word_lengths) >= $self->max_width) {
-		die "Don't yet know how to split words on non-whitespace boundries";
+	# Sanity check about if it's even possible to proceed
+	if ($widths_over->(@longest_word_lengths) > 0) {
+		die "It's not possible to fit the table in width ".$self->max_width." without break_words => 1\n";
 	}
 
 	# Reduce the amout of wrapping as much as possible.  Try and fit in the max_width with breaking the
@@ -346,7 +371,7 @@ sub _determine_column_widths {
 	return;
 }
 
-=doc _fit_lines_to_widths (\@lines)
+=doc _fit_lines_to_widths (\@lines, \@column_widths)
 
 Pass an array ref of lines (most likely from $self->lines).  Return an array ref of lines wrapped to the $self->column_widths values, and an array ref of the new max column widths.
 
@@ -355,11 +380,18 @@ Pass an array ref of lines (most likely from $self->lines).  Return an array ref
 sub _fit_lines_to_widths {
 	my ($self, $lines, @column_widths) = @_;
 
-	@column_widths = @{ $self->column_widths } if ! @column_widths;
+	@column_widths = @{ $self->column_widths } if ! @column_widths && $self->column_widths;
+	@column_widths = @{ $self->max_column_widths } if ! @column_widths;
 	if (! @column_widths) {
 		die "Can't call _fit_lines_to_widths() without column_widths set or passed";
 	}
 	my @max_column_widths;
+
+	use Data::Dumper;
+	warn Dumper({
+		column_widths => \@column_widths,
+		lines => $lines,
+	}) if 0;
 
 	my @new_lines;
 	foreach my $line (@$lines) {
@@ -369,49 +401,70 @@ sub _fit_lines_to_widths {
 			my $string = $strings->[$column_index];
 			my $width  = $column_widths[$column_index];
 
-			# If no width constraint or if this string already fits, store and move on
-			if (! $width || $string->length <= $width) {
+			# As long as this string doesn't span multiple lines, and
+			# if no width constraint or if this string already fits, store and move on
+			if ($string->line_count == 1 && (! $width || $string->length <= $width)) {
 				$new_line[0][$column_index] = $string;
 				next;
 			}
 
-			# If we can, break the string on word boundries and fit that way
-			if ($string->_longest_word_length <= $width) {
+			my ($store_buffer, $add_string_to_buffer);
+			{
 				my $row_index = 0;
 				my $length = 0;
 				my $buffer = '';
-				my $store_buffer = sub {
+				$store_buffer = sub {
 					return unless $length;
 					$new_line[$row_index++][$column_index] = BOX_STRING($buffer);
 					$length = 0;
 					$buffer = '';
 				};
-
-				# Place each word one at a time, breaking to a new row index each time we fill up a row
-				foreach my $word (@{ $string->_words }) {
-					my $space_will_preceed = $word->length && $length;
-
-					if ($length + $word->length + ($space_will_preceed ? 1 : 0) > $width) {
+				$add_string_to_buffer = sub {
+					my ($word_value, $word_length) = @_;
+					if ($width && $length + $word_length > $width) {
 						$store_buffer->();
-						$space_will_preceed = 0; # Don't start a line with a space
 					}
-
-					# Replace the space we split on in _split_up_on_whitespace
-					if ($space_will_preceed) {
-						$buffer .= ' ';
-						$length += 1;
-					}
-					$buffer .= $word->value;
-					$length += $word->length;
-				}
-				$store_buffer->();
-				next;
+					$buffer .= $word_value;
+					$length += $word_length;
+				};
 			}
 
-			# We couldn't split on whitespace; the longest word exceeds the width.  We need to split
-			# with hyphenation or just outright split at the width.
+			foreach my $line ($string->get_lines) {
 
-			die "Don't know yet how to proceed with splitting inside words";
+				# If no width constraint or if this string already fits, store and move on
+				if (! $width || $line->length <= $width) {
+					$add_string_to_buffer->($line->value, $line->length);
+					$store_buffer->();
+					next;
+				}
+
+				if ($self->break_words) {
+					foreach my $segment ($line->_split_to_max_width($width)) {
+						$add_string_to_buffer->($segment->value, $segment->length);
+						$store_buffer->();
+					}
+					next;
+				}
+
+				# If we can, break the string on word boundries and fit that way
+				$line->_split_up_on_whitespace;
+				if ($line->_longest_word_length <= $width) {
+					# Place each word one at a time, breaking to a new row index each time we fill up a row
+					# We split the original string on ' '; we need to join each $word with a space
+					foreach my $word_index (0..$#{ $line->_words }) {
+						my $word = $line->_words->[$word_index];
+						if ($word_index != 0) {
+							# add a space
+							$add_string_to_buffer->(' ', 1);
+						}
+						$add_string_to_buffer->($word->value, $word->length);
+					}
+					$store_buffer->();
+					next;
+				}
+
+				die "Without break_words => 1, there is no way to fit a string line of length ".$line->length." into width $width";
+			}
 		}
 		foreach my $row_index (0..$#new_line) {
 			# Every cell needs to have a string object
