@@ -389,11 +389,15 @@ sub _fit_lines_to_widths {
 
 				# Place each word one at a time, breaking to a new row index each time we fill up a row
 				foreach my $word (@{ $string->_words }) {
-					if ($length + $word->length > $width) {
+					my $space_will_preceed = $word->length && $length;
+
+					if ($length + $word->length + ($space_will_preceed ? 1 : 0) > $width) {
 						$store_buffer->();
+						$space_will_preceed = 0; # Don't start a line with a space
 					}
+
 					# Replace the space we split on in _split_up_on_whitespace
-					if ($word->length && $length) {
+					if ($space_will_preceed) {
 						$buffer .= ' ';
 						$length += 1;
 					}
