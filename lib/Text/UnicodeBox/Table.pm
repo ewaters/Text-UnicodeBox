@@ -263,11 +263,6 @@ sub _push_line {
 
 		# Update record of max column widths
 		$self->max_column_widths->[$i] = max($string_length, $self->max_column_widths->[$i] || 0);
-
-		# Prepare for fitting logic
-		if ($self->_is_width_constrained) {
-			$string->_split_up_on_whitespace;
-		}
 	}
 
 	push @{ $self->lines }, [ $opt, \@strings ];
@@ -323,7 +318,7 @@ sub _determine_column_widths {
 	my @longest_word_lengths;
 	foreach my $line (@{ $self->lines }) {
 		foreach my $column_index (0..$#{ $line->[1] }) {
-			my $length = $line->[1][$column_index]->_longest_word_length;
+			my $length = $line->[1][$column_index]->longest_word_length;
 			$longest_word_lengths[$column_index] = max($length, $longest_word_lengths[$column_index] || 0);
 		}
 	}
@@ -418,32 +413,11 @@ sub _fit_lines_to_widths {
 					next;
 				}
 
-				if ($self->break_words) {
-					foreach my $segment ($line->_split_to_max_width($width)) {
-						$add_string_to_buffer->($segment->value, $segment->length);
-						$store_buffer->();
-					}
-					next;
-				}
-
-				# If we can, break the string on word boundries and fit that way
-				$line->_split_up_on_whitespace;
-				if ($line->_longest_word_length <= $width) {
-					# Place each word one at a time, breaking to a new row index each time we fill up a row
-					# We split the original string on ' '; we need to join each $word with a space
-					foreach my $word_index (0..$#{ $line->_words }) {
-						my $word = $line->_words->[$word_index];
-						if ($word_index != 0) {
-							# add a space
-							$add_string_to_buffer->(' ', 1);
-						}
-						$add_string_to_buffer->($word->value, $word->length);
-					}
+				foreach my $segment ($line->split( break_words => $self->break_words, max_width => $width )) {
+					$add_string_to_buffer->($segment->value, $segment->length);
 					$store_buffer->();
-					next;
 				}
-
-				die "Without break_words => 1, there is no way to fit a string line of length ".$line->length." into width $width";
+				next;
 			}
 		}
 		foreach my $row_index (0..$#new_line) {
