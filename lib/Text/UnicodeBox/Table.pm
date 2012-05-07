@@ -50,12 +50,6 @@ has 'break_words'       => ( is => 'ro' );
 
 =over 4
 
-=item style
-
-  my $table = Text::UnicodeBox::Table->new( style => 'horizontal_double ');
-
-You may specify a certain style for the table to be drawn.  This may be overridden on a per row basis.
-
 =item split_lines
 
 If set, line breaks in cell data will result in new rows rather then breaks in the rendering.
@@ -74,6 +68,12 @@ If set, wrapping may break words
   # First column may be any width but the second and third have specified widths
 
 Specify the exact width of each column, sans padding and box formatting.
+
+=item style
+
+  my $table = Text::UnicodeBox::Table->new( style => 'horizontal_double ');
+
+You may specify a certain style for the table to be drawn.  This may be overridden on a per row basis.
 
 =over 4
 
@@ -273,11 +273,9 @@ sub _is_width_constrained {
 	return $self->max_width || $self->column_widths;
 }
 
-=doc _determine_column_widths
-
-Pass no args, return nothing.  Figure out what the column widths should be where the caller has specified a custom max_width value that they'd like the whole table to be constrained to.
-
-=cut
+## _determine_column_widths
+#
+# Pass no args, return nothing.  Figure out what the column widths should be where the caller has specified a custom max_width value that they'd like the whole table to be constrained to.
 
 sub _determine_column_widths {
 	my $self = shift;
@@ -352,11 +350,9 @@ sub _determine_column_widths {
 	return;
 }
 
-=doc _fit_lines_to_widths (\@lines, \@column_widths)
-
-Pass an array ref of lines (most likely from $self->lines).  Return an array ref of lines wrapped to the $self->column_widths values, and an array ref of the new max column widths.
-
-=cut
+## _fit_lines_to_widths (\@lines, \@column_widths)
+#
+#  Pass an array ref of lines (most likely from $self->lines).  Return an array ref of lines wrapped to the $self->column_widths values, and an array ref of the new max column widths.
 
 sub _fit_lines_to_widths {
 	my ($self, $lines, @column_widths) = @_;

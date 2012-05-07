@@ -149,11 +149,9 @@ sub to_string {
 	return $self->value;
 }
 
-=doc _build_longest_word_length
-
-In order to find ideal widths of a wrapped column without breaking words, it's necessary to know the longest word length in the string.
-
-=cut
+## _build_longest_word_length
+#
+#  In order to find ideal widths of a wrapped column without breaking words, it's necessary to know the longest word length in the string.
 
 sub _build_longest_word_length {
 	my $self = shift;
@@ -200,11 +198,9 @@ sub longest_line_length {
 	return $self->_longest_line_length;
 }
 
-=doc _split_up_on_newline
-
-Populate _lines, line_count and _longest_line_length
-
-=cut
+## _split_up_on_newline
+#
+#  Populate _lines, line_count and _longest_line_length
 
 sub _split_up_on_newline {
 	my $self = shift;
@@ -320,11 +316,9 @@ sub split {
 	return @segments;
 }
 
-=doc _color_state_tracker
-
-Pass in a numerical ANSI color escape and it'll track what the cumulative state is over time
-
-=cut
+## _color_state_tracker
+#
+#  Pass in a numerical ANSI color escape and it'll track what the cumulative state is over time
 
 sub _color_state_tracker {
 	my %color_state;
