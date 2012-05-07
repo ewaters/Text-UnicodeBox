@@ -12,7 +12,7 @@ This module is part of the low level interface to L<Text::UnicodeBox>; you proba
 
 use Moose;
 use Text::UnicodeBox::Utility;
-use Text::CharWidth qw(mbswidth);
+use Text::CharWidth qw(mbwidth mbswidth);
 use Term::ANSIColor qw(colorstrip);
 use Exporter 'import';
 use List::Util qw(max);
@@ -172,11 +172,46 @@ sub _split_up_on_whitespace {
 	$self->_words(\@words)
 }
 
+=head2 lines
+
+Return array of objects of this string split into new strings on the newline character
+
+=cut
+
+sub lines {
+	my $self = shift;
+	$self->_split_up_on_newline();
+	if ($self->_lines) {
+		return @{ $self->_lines };
+	}
+	else {
+		return $self;
+	}
+}
+
+=head2 longest_line_length
+
+Return the length of the longest line in C<lines()>
+
+=cut
+
+sub longest_line_length {
+	my $self = shift;
+	$self->_split_up_on_newline();
+	return $self->_longest_line_length;
+}
+
+=doc _split_up_on_newline
+
+Populate _lines, line_count and _longest_line_length
+
+=cut
+
 sub _split_up_on_newline {
 	my $self = shift;
 
 	# Don't repeat work
-	return if $self->_longest_line_length;
+	return if defined $self->_longest_line_length;
 
 	my (@lines, $longest_line);
 	foreach my $line (split /\n/, $self->value) {
@@ -190,14 +225,83 @@ sub _split_up_on_newline {
 	$self->line_count(int @lines);
 }
 
-sub get_lines {
-	my $self = shift;
-	if ($self->_lines) {
-		return @{ $self->_lines };
+=doc
+[1m bold on (see below)
+[22m bold off (see below)
+[3m italics on
+[23m italics off
+[4m underline on
+[24m underline off
+[7m inverse on; reverses foreground & background colors
+[27m inverse off
+[9m strikethrough on
+[29m strikethrough off
+=cut
+
+sub split {
+	my ($self, %args) = @_;
+
+	my @segments;
+	my $value = $self->value;
+	if ($args{break_words}) {
+		my $width = 0;
+		my $buffer = '';
+		my %color_state;
+		while (length $value) {
+			my $char = substr $value, 0, 1, '';
+
+			# Check for a color escape sequence
+			if (ord($char) == 27 && $value =~ m{^\[(\d+)m}) {
+				my $color_state = $1 * 1;
+				$value =~ s{^\[\d+m}{};
+				$buffer .= $char . "[${color_state}m";
+
+				my $type;
+				# 0 is the reset code
+				if ($color_state == 0) {
+					%color_state = ();
+				}
+				elsif ($color_state == 1 || $color_state == 22) {
+					$type = 'bold';
+				}
+				elsif ($color_state == 3 || $color_state == 23) {
+					$type = 'italics';
+				}
+				elsif ($color_state == 4 || $color_state == 24) {
+					$type = 'underline';
+				}
+				elsif ($color_state == 7 || $color_state == 27) {
+					$type = 'inverse';
+				}
+				elsif ($color_state == 9 || $color_state == 29) {
+					$type = 'strikethrough';
+				}
+				elsif ($color_state >= 30 || $color_state <= 39) {
+					$type = 'foreground';
+				}
+				elsif ($color_state >= 40 || $color_state <= 49) {
+					$type = 'background';
+				}
+				if ($color_state >= 20 && $color_state <= 29) {
+					delete $color_state{$type};
+				}
+				else {
+					$color_state{$type} = $color_state;
+				}
+				next;
+			}
+			
+			my $char_width = mbwidth($char);
+			if ($char_width + $width <= $args->{max_width}) {
+				$buffer .= $char;
+				$width += $char_width;
+			}
+		}
 	}
 	else {
-		return $self;
+		die "Not supported";
 	}
+	return @segments;
 }
 
 =doc _split_to_max_width

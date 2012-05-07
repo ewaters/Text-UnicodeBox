@@ -247,20 +247,6 @@ sub _push_line {
 	$columns[$_] = '' foreach grep { ! defined $columns[$_] } 0..$#columns;
 
 	my $do_split_lines = defined $opt->{split_lines} ? $opt->{split_lines} : $self->split_lines;
-=cut
-	# If split_lines, break up each cell into as many lines as necessary and recall _push_line for each new row
-	if ($do_split_lines && grep { /\n/ } @columns) {
-		my @new_rows;
-		foreach my $i (0..$#columns) {
-			my @split = split /\n/, $columns[$i];
-			foreach my $j (0..$#split) {
-				$new_rows[$j][$i] = $split[$j];
-			}
-		}
-		$self->_push_line($opt, @$_) foreach @new_rows;
-		return;
-	}
-=cut
 
 	# Convert each column into a ::Text object so that I can figure out the length as
 	# well as record max column widths
@@ -271,8 +257,8 @@ sub _push_line {
 		push @strings, $string;
 
 		if ($do_split_lines && $columns[$i] =~ m/\n/) {
-			$string->_split_up_on_newline;
-			$string_length = $string->_longest_line_length;
+			# Asking for the longest_line_length will automatically split the string on newlines
+			$string_length = $string->longest_line_length;
 		}
 
 		# Update record of max column widths
@@ -387,12 +373,6 @@ sub _fit_lines_to_widths {
 	}
 	my @max_column_widths;
 
-	use Data::Dumper;
-	warn Dumper({
-		column_widths => \@column_widths,
-		lines => $lines,
-	}) if 0;
-
 	my @new_lines;
 	foreach my $line (@$lines) {
 		my ($opts, $strings) = @$line;
@@ -429,7 +409,7 @@ sub _fit_lines_to_widths {
 				};
 			}
 
-			foreach my $line ($string->get_lines) {
+			foreach my $line ($string->lines) {
 
 				# If no width constraint or if this string already fits, store and move on
 				if (! $width || $line->length <= $width) {
