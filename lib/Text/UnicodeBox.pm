@@ -239,6 +239,10 @@ sub _generate_box_border_line {
 	return $line;
 }
 
+=head1 DEVELOPMENT
+
+This module is being developed via a git repository publicly avaiable at http://github.com/ewaters/Text-UnicodeBox.  I encourage anyone who is interested to fork my code and contribute bug fixes or new features, or just have fun and be creative.
+
 =head1 COPYRIGHT
 
 Copyright (c) 2012 Eric Waters and Shutterstock Images (http://shutterstock.com).  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
