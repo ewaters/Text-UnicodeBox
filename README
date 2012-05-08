@@ -61,6 +61,12 @@ METHODS
 
     Returns the buffer
 
+DEVELOPMENT
+    This module is being developed via a git repository publicly avaiable at
+    http://github.com/ewaters/Text-UnicodeBox. I encourage anyone who is
+    interested to fork my code and contribute bug fixes or new features, or
+    just have fun and be creative.
+
 COPYRIGHT
     Copyright (c) 2012 Eric Waters and Shutterstock Images
     (http://shutterstock.com). All rights reserved. This program is free
