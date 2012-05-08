@@ -4,10 +4,15 @@ use Test::More;
 use Term::ANSIColor qw(:constants colored);
 use Data::Dumper;
 use utf8;
+use Text::CharWidth qw(mbwidth);
 
 BEGIN {
 	use_ok 'Text::UnicodeBox::Text', qw(:all);
 };
+
+# If LC_ environment variables can't see this string encoded in the proper format (i.e., called in a server context with no controlling terminal),
+# then this module can't operate with Unicode or UTF-8 encoded strings.
+my $skip_unicode_tests = mbwidth("象") == 2 ? 0 : 1;
 
 my $part = BOX_STRING("Hello world");
 isa_ok $part, 'Text::UnicodeBox::Text';
@@ -122,63 +127,65 @@ is_deeply [ map { $_->value } @segments ], [
 
 ## Split unicode text
 
-# "I Can Eat Glass" from http://www.columbia.edu/~fdc/utf8/
-my $text = <<ENDTEXT;
-\x{39c}\x{3c0}\x{3bf}\x{3c1}\x{3ce} \x{3bd}\x{3b1} \x{3c6}\x{3ac}\x{3c9} \x{3c3}\x{3c0}\x{3b1}\x{3c3}\x{3bc}\x{3ad}\x{3bd}\x{3b1} \x{3b3}\x{3c5}\x{3b1}\x{3bb}\x{3b9}\x{3ac} \x{3c7}\x{3c9}\x{3c1}\x{3af}\x{3c2} \x{3bd}\x{3b1} \x{3c0}\x{3ac}\x{3b8}\x{3c9} \x{3c4}\x{3af}\x{3c0}\x{3bf}\x{3c4}\x{3b1}.
-\x{79c1}\x{306f}\x{30ac}\x{30e9}\x{30b9}\x{3092}\x{98df}\x{3079}\x{3089}\x{308c}\x{307e}\x{3059}\x{3002}\x{305d}\x{308c}\x{306f}\x{79c1}\x{3092}\x{50b7}\x{3064}\x{3051}\x{307e}\x{305b}\x{3093}\x{3002}
-\x{6211}\x{80fd}\x{541e}\x{4e0b}\x{73bb}\x{7483}\x{800c}\x{4e0d}\x{4f24}\x{8eab}\x{4f53}\x{3002}
-\x{16c1}\x{16b3}\x{16eb}\x{16d7}\x{16a8}\x{16b7}\x{16eb}\x{16b7}\x{16da}\x{16a8}\x{16cb}\x{16eb}\x{16d6}\x{16a9}\x{16cf}\x{16aa}\x{16be}\x{16eb}\x{16a9}\x{16be}\x{16de}\x{16eb}\x{16bb}\x{16c1}\x{16cf}\x{16eb}\x{16be}\x{16d6}\x{16eb}\x{16bb}\x{16d6}\x{16aa}\x{16b1}\x{16d7}\x{16c1}\x{16aa}\x{16a7}\x{16eb}\x{16d7}\x{16d6}\x{16ec}
-\x{42f} \x{43c}\x{43e}\x{433}\x{443} \x{435}\x{441}\x{442}\x{44c} \x{441}\x{442}\x{435}\x{43a}\x{43b}\x{43e}, \x{43e}\x{43d}\x{43e} \x{43c}\x{43d}\x{435} \x{43d}\x{435} \x{432}\x{440}\x{435}\x{434}\x{438}\x{442}.
-\x{b098}\x{b294} \x{c720}\x{b9ac}\x{b97c} \x{ba39}\x{c744} \x{c218} \x{c788}\x{c5b4}\x{c694}. \x{adf8}\x{b798}\x{b3c4} \x{c544}\x{d504}\x{c9c0} \x{c54a}\x{c544}\x{c694}
+if (! $skip_unicode_tests) {
+	# "I Can Eat Glass" from http://www.columbia.edu/~fdc/utf8/
+	my $text = <<ENDTEXT;
+Μπορώ να φάω σπασμένα γυαλιά χωρίς να πάθω τίποτα.
+私はガラスを食べられます。それは私を傷つけません。
+我能吞下玻璃而不伤身体。
+ᛁᚳ᛫ᛗᚨᚷ᛫ᚷᛚᚨᛋ᛫ᛖᚩᛏᚪᚾ᛫ᚩᚾᛞ᛫ᚻᛁᛏ᛫ᚾᛖ᛫ᚻᛖᚪᚱᛗᛁᚪᚧ᛫ᛗᛖ᛬
+Я могу есть стекло, оно мне не вредит.
+나는 유리를 먹을 수 있어요. 그래도 아프지 않아요
 ENDTEXT
 
-$part = BOX_STRING($text);
+	$part = BOX_STRING($text);
 
-@lines = $part->lines();
-is int @lines, 6, "Got six lines from 'I Can Eat Glass'";
+	@lines = $part->lines();
+	is int @lines, 6, "Got six lines from 'I Can Eat Glass'";
 
-my @got;
-foreach my $line (@lines) {
-	my @segment_values;
-	foreach my $segment ($line->split( max_width => 20, break_words => 1 )) {
-		push @segment_values, $segment->value;
+	my @got;
+	foreach my $line (@lines) {
+		my @segment_values;
+		foreach my $segment ($line->split( max_width => 20, break_words => 1 )) {
+			push @segment_values, $segment->value;
+		}
+		push @got, \@segment_values;
 	}
-	push @got, \@segment_values;
-}
 
-is_deeply
-	\@got,
-	[
+	is_deeply
+		\@got,
 		[
-			"\x{39c}\x{3c0}\x{3bf}\x{3c1}\x{3ce} \x{3bd}\x{3b1} \x{3c6}\x{3ac}\x{3c9} \x{3c3}\x{3c0}\x{3b1}\x{3c3}\x{3bc}\x{3ad}\x{3bd}",
-			"\x{3b1} \x{3b3}\x{3c5}\x{3b1}\x{3bb}\x{3b9}\x{3ac} \x{3c7}\x{3c9}\x{3c1}\x{3af}\x{3c2} \x{3bd}\x{3b1} \x{3c0}\x{3ac}",
-			"\x{3b8}\x{3c9} \x{3c4}\x{3af}\x{3c0}\x{3bf}\x{3c4}\x{3b1}.",
+			[
+				"Μπορώ να φάω σπασμέν",
+				"α γυαλιά χωρίς να πά",
+				"θω τίποτα.",
+			],
+			[
+				"私はガラスを食べられ",
+				"ます。それは私を傷つ",
+				"けません。",
+			],
+			[
+				"我能吞下玻璃而不伤身",
+				"体。",
+			],
+			[
+				"ᛁᚳ᛫ᛗᚨᚷ᛫ᚷᛚᚨᛋ᛫ᛖᚩᛏᚪᚾ᛫ᚩᚾ",
+				"ᛞ᛫ᚻᛁᛏ᛫ᚾᛖ᛫ᚻᛖᚪᚱᛗᛁᚪᚧ᛫ᛗᛖ",
+				"᛬",
+			],
+			[
+				"Я могу есть стекло, ",
+				"оно мне не вредит.",
+			],
+			[
+				"나는 유리를 먹을 수 ",
+				"있어요. 그래도 아프",
+				"지 않아요",
+			],
 		],
-		[
-			"\x{79c1}\x{306f}\x{30ac}\x{30e9}\x{30b9}\x{3092}\x{98df}\x{3079}\x{3089}\x{308c}",
-			"\x{307e}\x{3059}\x{3002}\x{305d}\x{308c}\x{306f}\x{79c1}\x{3092}\x{50b7}\x{3064}",
-			"\x{3051}\x{307e}\x{305b}\x{3093}\x{3002}",
-		],
-		[
-			"\x{6211}\x{80fd}\x{541e}\x{4e0b}\x{73bb}\x{7483}\x{800c}\x{4e0d}\x{4f24}\x{8eab}",
-			"\x{4f53}\x{3002}",
-		],
-		[
-			"\x{16c1}\x{16b3}\x{16eb}\x{16d7}\x{16a8}\x{16b7}\x{16eb}\x{16b7}\x{16da}\x{16a8}\x{16cb}\x{16eb}\x{16d6}\x{16a9}\x{16cf}\x{16aa}\x{16be}\x{16eb}\x{16a9}\x{16be}",
-			"\x{16de}\x{16eb}\x{16bb}\x{16c1}\x{16cf}\x{16eb}\x{16be}\x{16d6}\x{16eb}\x{16bb}\x{16d6}\x{16aa}\x{16b1}\x{16d7}\x{16c1}\x{16aa}\x{16a7}\x{16eb}\x{16d7}\x{16d6}",
-			"\x{16ec}",
-		],
-		[
-			"\x{42f} \x{43c}\x{43e}\x{433}\x{443} \x{435}\x{441}\x{442}\x{44c} \x{441}\x{442}\x{435}\x{43a}\x{43b}\x{43e}, ",
-			"\x{43e}\x{43d}\x{43e} \x{43c}\x{43d}\x{435} \x{43d}\x{435} \x{432}\x{440}\x{435}\x{434}\x{438}\x{442}.",
-		],
-		[
-			"\x{b098}\x{b294} \x{c720}\x{b9ac}\x{b97c} \x{ba39}\x{c744} \x{c218} ",
-			"\x{c788}\x{c5b4}\x{c694}. \x{adf8}\x{b798}\x{b3c4} \x{c544}\x{d504}",
-			"\x{c9c0} \x{c54a}\x{c544}\x{c694}",
-		],
-	],
-	"Split six lines of 'I Can Eat Glass' at 20 width";
+		"Split six lines of 'I Can Eat Glass' at 20 width";
+}
 
 done_testing;
 

@@ -3,8 +3,16 @@ use warnings;
 use utf8;
 use Test::More;
 use Encode qw(encode decode);
+use Text::CharWidth qw(mbwidth);
 
 BEGIN {
+	# If LC_ environment variables can't see this string encoded in the proper format (i.e., called in a server context with no controlling terminal),
+	# then this module can't operate with Unicode or UTF-8 encoded strings.
+	if (mbwidth("象") != 2) {
+		plan skip_all => "Can't run without Locale set";
+		exit;
+	}
+
 	use_ok 'Text::UnicodeBox';
 	use_ok 'Text::UnicodeBox::Control', qw(:all);
 	use_ok 'Text::UnicodeBox::Text', qw(:all);
@@ -15,7 +23,7 @@ my $box = Text::UnicodeBox->new(
 );
 isa_ok $box, 'Text::UnicodeBox';
 
-my $kanji = " \x{8c61}\x{5f62}\x{6587}\x{5b57}\x{8c61}\x{5f62}\x{6587}\x{5b57} ";
+my $kanji = " 象形文字象形文字 ";
 is length($kanji), 10, "Double-width Kanji characters";
 is BOX_STRING($kanji)->length, 18, "Width as seen by the module";
 
@@ -26,9 +34,9 @@ $box->add_line(
 );
 
 is $box->render, <<END_BOX, "Box with Kanji unicode text";
-.\x{250f}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2513}.
-.\x{2503} \x{8c61}\x{5f62}\x{6587}\x{5b57}\x{8c61}\x{5f62}\x{6587}\x{5b57} \x{2503}.
-.\x{2517}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{251b}.
+.┏━━━━━━━━━━━━━━━━━━┓.
+.┃ 象形文字象形文字 ┃.
+.┗━━━━━━━━━━━━━━━━━━┛.
 END_BOX
 
 # Miscellanous foreign character sets
@@ -36,26 +44,26 @@ END_BOX
 $box = Text::UnicodeBox->new();
 isa_ok $box, 'Text::UnicodeBox';
 
-is BOX_STRING(" suscripci".pack("U", 0xf3)."n  ")->length, 14, "Spanish";
-is BOX_STRING(" qualit".pack("U", 0xe9)."      ")->length, 14, "Portuegese";
-is BOX_STRING(" \x{444}\x{43e}\x{442}\x{43e}\x{433}\x{440}\x{430}\x{444}\x{438}\x{439}   ")->length, 14, "Russian";
-is BOX_STRING(" \x{6536}\x{96c6}\x{5e93}\x{5185}\x{589e}\x{52a0} ")->length, 14, "Chinese";
-is BOX_STRING(" \x{5199}\x{771f}\x{306e}\x{8ca9}\x{58f2}\x{30a8} ")->length, 14, "Japanese";
+is BOX_STRING(" suscripción  ")->length, 14, "Spanish";
+is BOX_STRING(" qualité      ")->length, 14, "Portuegese";
+is BOX_STRING(" фотографий   ")->length, 14, "Russian";
+is BOX_STRING(" 收集库内增加 ")->length, 14, "Chinese";
+is BOX_STRING(" 写真の販売エ ")->length, 14, "Japanese";
 
-$box->add_line( BOX_START( style => 'heavy', top => 'heavy' ), " suscripci".pack("U", 0xf3)."n  ", BOX_END() );
-$box->add_line( BOX_START( style => 'heavy' ),                 " qualit".pack("U", 0xe9)."      ", BOX_END() );
-$box->add_line( BOX_START( style => 'heavy' ),                 " \x{444}\x{43e}\x{442}\x{43e}\x{433}\x{440}\x{430}\x{444}\x{438}\x{439}   ", BOX_END() );
-$box->add_line( BOX_START( style => 'heavy' ),                 " \x{6536}\x{96c6}\x{5e93}\x{5185}\x{589e}\x{52a0} ", BOX_END() );
-$box->add_line( BOX_START(style => 'heavy',bottom => 'heavy'), " \x{5199}\x{771f}\x{306e}\x{8ca9}\x{58f2}\x{30a8} ", BOX_END() );
+$box->add_line( BOX_START( style => 'heavy', top => 'heavy' ), " suscripción  ", BOX_END() );
+$box->add_line( BOX_START( style => 'heavy' ),                 " qualité      ", BOX_END() );
+$box->add_line( BOX_START( style => 'heavy' ),                 " фотографий   ", BOX_END() );
+$box->add_line( BOX_START( style => 'heavy' ),                 " 收集库内增加 ", BOX_END() );
+$box->add_line( BOX_START(style => 'heavy',bottom => 'heavy'), " 写真の販売エ ", BOX_END() );
 
 is $box->render,
-"\x{250f}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2513}
-\x{2503} suscripci".pack("U", 0xf3)."n  \x{2503}
-\x{2503} qualit".pack("U", 0xe9)."      \x{2503}
-\x{2503} \x{444}\x{43e}\x{442}\x{43e}\x{433}\x{440}\x{430}\x{444}\x{438}\x{439}   \x{2503}
-\x{2503} \x{6536}\x{96c6}\x{5e93}\x{5185}\x{589e}\x{52a0} \x{2503}
-\x{2503} \x{5199}\x{771f}\x{306e}\x{8ca9}\x{58f2}\x{30a8} \x{2503}
-\x{2517}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{2501}\x{251b}
+"┏━━━━━━━━━━━━━━┓
+┃ suscripción  ┃
+┃ qualité      ┃
+┃ фотографий   ┃
+┃ 收集库内增加 ┃
+┃ 写真の販売エ ┃
+┗━━━━━━━━━━━━━━┛
 ", "Box with many languages";
 
 done_testing;
