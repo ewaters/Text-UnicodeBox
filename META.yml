@@ -16,7 +16,7 @@ name: Text-UnicodeBox
 provides:
   Text::UnicodeBox:
     file: lib/Text/UnicodeBox.pm
-    version: 0.01
+    version: 0.02
   Text::UnicodeBox::Control:
     file: lib/Text/UnicodeBox/Control.pm
     version: 0
@@ -35,4 +35,4 @@ requires:
   Text::CharWidth: 0.04
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.01
+version: 0.02

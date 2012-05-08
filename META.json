@@ -35,7 +35,7 @@
    "provides" : {
       "Text::UnicodeBox" : {
          "file" : "lib/Text/UnicodeBox.pm",
-         "version" : "0.01"
+         "version" : "0.02"
       },
       "Text::UnicodeBox::Control" : {
          "file" : "lib/Text/UnicodeBox/Control.pm",
@@ -60,5 +60,5 @@
          "http://dev.perl.org/licenses/"
       ]
    },
-   "version" : "0.01"
+   "version" : "0.02"
 }
