@@ -294,20 +294,18 @@ sub split {
 			if ($next_space_index > 0) {
 				$word = substr $value, 0, $next_space_index, '';
 			}
-			if ($word) {
-				# Wrap to the next line if the current line can't hold this word
-				my $word_width = mbswidth($word);
-				$save_buffer->() if $word_width + $width > $args{max_width};
-
-				# Write out the word, character by character
-				while (length $word) {
-					my $char = substr $word, 0, 1, '';
-					$add_char->($char, \$word);
-				}
+			if (! $word) {
+				$word = $value;
+				$value = '';
 			}
-			else {
-				# No word found; write out the rest of the string character by character
-				$character_by_character = 1;
+			# Wrap to the next line if the current line can't hold this word
+			my $word_width = mbswidth($word);
+			$save_buffer->() if $word_width + $width > $args{max_width};
+
+			# Write out the word, character by character
+			while (length $word) {
+				my $char = substr $word, 0, 1, '';
+				$add_char->($char, \$word);
 			}
 		}
 	}
