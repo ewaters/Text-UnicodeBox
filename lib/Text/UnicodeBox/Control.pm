@@ -11,7 +11,6 @@ This module is part of the low level interface to L<Text::UnicodeBox>; you proba
 =cut
 
 use Moose;
-use Text::UnicodeBox::Utility qw(fetch_box_character);
 use Exporter 'import';
 
 =head1 METHODS
@@ -89,7 +88,7 @@ Return a string representing the rendering of this control part.  Pass a hashref
 =cut
 
 sub to_string {
-	my ($self, $context) = @_;
+	my ($self, $context, $box) = @_;
 
 	my $style = $self->style;
 	
@@ -113,7 +112,7 @@ sub to_string {
 	# Default style to 'light'
 	$style ||= 'light';
 
-	return fetch_box_character( vertical => $style );
+	return $box->_fetch_box_character( vertical => $style );
 }
 
 =head1 COPYRIGHT

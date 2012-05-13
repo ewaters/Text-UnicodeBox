@@ -454,7 +454,7 @@ sub output_width {
 	}
 
 	if ($self->max_width && $width > $self->max_width) {
-		return $self->max_width; # FIXME: is this relastic?  What about for very small values of max_width and large count of columns?
+		return $self->max_width; # FIXME: is this realistic?  What about for very small values of max_width and large count of columns?
 	}
 
 	return $width;

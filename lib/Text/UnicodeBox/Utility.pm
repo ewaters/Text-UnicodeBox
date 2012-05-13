@@ -15,7 +15,7 @@ use warnings;
 use charnames ();
 use Exporter 'import';
 
-our @EXPORT_OK = qw(find_box_unicode_name fetch_box_character);
+our @EXPORT_OK = qw(find_box_unicode_name fetch_box_character normalize_box_character_parameters);
 our $report_on_failure = 0;
 
 =head1 EXPORTED METHODS
@@ -31,6 +31,7 @@ Same as C<find_box_unicode_name> but returns the actual symbol.
 sub fetch_box_character {
     my $name = find_box_unicode_name(@_);
 	return undef unless $name;
+
     return chr charnames::vianame($name);
 }
 
@@ -65,35 +66,8 @@ For each key, the value may be and empty string or the string '1' to default to 
 =cut
 
 sub find_box_unicode_name {
-    my %directions = @_;
-
-	if (grep { ! defined $_ } values %directions) {
-		print "No way to handle undefined values: " . 
-			join (', ', map { "$_: ".(defined $directions{$_} ? $directions{$_} : 'undef') } sort keys %directions) . "\n";
-		return undef;
-	}
-
-    # Expand shorthand
-    foreach my $direction (keys %directions) {
-        $directions{$direction} = 'light' if $directions{$direction} . '' eq '1';
-    }
-
-    # Convert left & right to horizontal, up & down to vertical
-    if ($directions{down} && $directions{up} && $directions{down} eq $directions{up}) {
-        $directions{vertical} = delete $directions{down};
-        delete $directions{up};
-    }
-    if ($directions{left} && $directions{right} && $directions{left} eq $directions{right}) {
-        $directions{horizontal} = delete $directions{left};
-        delete $directions{right};
-    }
-
-	# If any of the styles is a double, make sure all 'light' are 'single'
-	if (grep { $directions{$_} eq 'double' } keys %directions) {
-		foreach my $direction (grep { $directions{$_} eq 'light' } keys %directions) {
-			$directions{$direction} = 'single';
-		}
-	}
+	my %directions = normalize_box_character_parameters(@_);
+	return undef unless %directions;
 
     # Group together styles
     my %styles;
@@ -153,6 +127,46 @@ sub find_box_unicode_name {
 	}
 
     return undef;
+}
+
+=head2 normalize_box_character_parameters (%spec)
+
+Takes the passed argument list to fetch_box_character() and normalizes the arguments in an idempotent fashion, returning the new spec list.
+
+=cut
+
+sub normalize_box_character_parameters {
+	my %directions = @_;
+
+	if (grep { ! defined $_ } values %directions) {
+		print "No way to handle undefined values: " . 
+			join (', ', map { "$_: ".(defined $directions{$_} ? $directions{$_} : 'undef') } sort keys %directions) . "\n";
+		return ();
+	}
+
+    # Expand shorthand
+    foreach my $direction (keys %directions) {
+        $directions{$direction} = 'light' if $directions{$direction} . '' eq '1';
+    }
+
+    # Convert left & right to horizontal, up & down to vertical
+    if ($directions{down} && $directions{up} && $directions{down} eq $directions{up}) {
+        $directions{vertical} = delete $directions{down};
+        delete $directions{up};
+    }
+    if ($directions{left} && $directions{right} && $directions{left} eq $directions{right}) {
+        $directions{horizontal} = delete $directions{left};
+        delete $directions{right};
+    }
+
+	# If any of the styles is a double, make sure all 'light' are 'single'
+	if (grep { $directions{$_} eq 'double' } keys %directions) {
+		foreach my $direction (grep { $directions{$_} eq 'light' } keys %directions) {
+			$directions{$direction} = 'single';
+		}
+	}
+
+	return %directions;
 }
 
 =head1 COPYRIGHT

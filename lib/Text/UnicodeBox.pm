@@ -40,12 +40,13 @@ use Moose;
 
 use Text::UnicodeBox::Control qw(:all);
 use Text::UnicodeBox::Text qw(:all);
-use Text::UnicodeBox::Utility qw(fetch_box_character);
+use Text::UnicodeBox::Utility qw(normalize_box_character_parameters);
 use Scalar::Util qw(blessed);
 
 has 'buffer_ref' => ( is => 'rw', default => sub { my $buffer = '';  return \$buffer } );
 has 'last_line'  => ( is => 'rw' );
 has 'whitespace_character' => ( is => 'ro', default => ' ' );
+has 'fetch_box_character' => ( is => 'rw' );
 
 our $VERSION = 0.02;
 
@@ -109,7 +110,7 @@ sub add_line {
 		my %context;
 		foreach my $part (@parts) {
 			$current_line{parts_at_position}{$position} = $part;
-			$line .= $part->to_string(\%context);
+			$line .= $part->to_string(\%context, $self);
 			$position += $part->can('length') ? $part->length : 1;
 		}
 		$line .= "\n";
@@ -226,17 +227,40 @@ sub _generate_box_border_line {
 			delete $symbol{horizontal} unless defined $symbol{horizontal};
 		}
 
+		# Find the character and add it to the line
+		my $char;
 		if (! keys %symbol) {
-			$line .= $self->whitespace_character();
+			$char = $self->whitespace_character();
 		}
 		else {
-			$line .= fetch_box_character(%symbol) || '?';
+			$char = $self->_fetch_box_character(%symbol);
 		}
+		$char = '?' unless defined $char;
+		$line .= $char;
 	}
 
 	$line .= "\n";
 
 	return $line;
+}
+
+sub _fetch_box_character {
+	my ($self, %symbol) = @_;
+	my $cache_key = join ';', map { "$_=$symbol{$_}" } sort keys %symbol;
+	if (exists $self->{_fetch_box_character_cache}{$cache_key}) {
+		return $self->{_fetch_box_character_cache}{$cache_key};
+	}
+	my $char;
+	if ($self->fetch_box_character) {
+		$char = $self->fetch_box_character->(
+			normalize_box_character_parameters(%symbol)
+		);
+	}
+	else {
+		$char = Text::UnicodeBox::Utility::fetch_box_character(%symbol);
+	}
+	$self->{_fetch_box_character_cache}{$cache_key} = $char;
+	return $char;
 }
 
 =head1 DEVELOPMENT
