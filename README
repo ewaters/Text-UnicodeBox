@@ -46,6 +46,18 @@ METHODS
         lines of output, this character will be used. Defaults to a simple
         space.
 
+    fetch_box_character
+        Provide a subroutine which will be used instead of the
+        "fetch_box_character" in Text::UnicodeBox::Utility. This allows the
+        user granular control over what symbols will be used for box
+        drawing. The subroutine will be called with a hash with any or all
+        of the following keys: 'left', 'right', up', 'down', 'vertical' or
+        'horizontal'. The value of each will be either '1' (default style),
+        'light', 'heavy', 'single' or 'double'.
+
+        Return a single width character or return undefined and a '?' will
+        be used for rendering.
+
   buffer
     Return the current buffer of rendered text.
 
