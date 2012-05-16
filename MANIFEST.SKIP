@@ -1,2 +1,10 @@
-^MYMETA.yml$
 ^\.git
+^\bdeps\b
+^\bbin/shutterstock.+
+^MYMETA.yml$
+^_build/
+^Build
+^blib/
+\.bak$
+\.tar.gz$
+^MYMETA\.json$

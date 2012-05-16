@@ -22,7 +22,9 @@ our $report_on_failure = 0;
 
 The following methods are exportable by name.
 
-=head2 fetch_box_character (%spec)
+=head2 fetch_box_character
+
+  my $character = fetch_box_character( vertical => 'heavy' );
 
 Same as C<find_box_unicode_name> but returns the actual symbol.
 

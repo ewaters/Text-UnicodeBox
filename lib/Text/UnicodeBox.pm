@@ -48,7 +48,7 @@ has 'last_line'  => ( is => 'rw' );
 has 'whitespace_character' => ( is => 'ro', default => ' ' );
 has 'fetch_box_character' => ( is => 'rw' );
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 =head1 METHODS
 
@@ -61,6 +61,12 @@ Create a new instance.  Provide arguments as a list.  Valid arguments are:
 =item whitespace_character (default: ' ')
 
 When the box renderer needs to pad the output of the interstitial lines of output, this character will be used.  Defaults to a simple space.
+
+=item fetch_box_character
+
+Provide a subroutine which will be used instead of the L<Text::UnicodeBox::Utility/fetch_box_character>.  This allows the user granular control over what symbols will be used for box drawing.  The subroutine will be called with a hash with any or all of the following keys: 'left', 'right', up', 'down', 'vertical' or 'horizontal'.  The value of each will be either '1' (default style), 'light', 'heavy', 'single' or 'double'.
+
+Return a single width character or return undefined and a '?' will be used for rendering.
 
 =back
 

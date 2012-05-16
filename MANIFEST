@@ -19,5 +19,6 @@ t/011_multirow.t
 t/012_unicode_text.t
 t/013_color_text.t
 t/014_multiple_boxes.t
+t/015_non_unicode_characters.t
 t/021_table.t
 t/022_table_wrap.t

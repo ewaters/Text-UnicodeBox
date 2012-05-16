@@ -48,6 +48,8 @@ has 'break_words'       => ( is => 'rw' );
 
 =head2 new
 
+Pass any arguments you would to L<Text::UnicodeBox/new> but with the following additions.
+
 =over 4
 
 =item split_lines
